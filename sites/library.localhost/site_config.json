@@ -1,0 +1,11 @@
+{
+ "db_host": "127.0.0.1",
+ "db_name": "_8da9b6201368520b",
+ "db_password": "qb3ygDXBlvGFw0bt",
+ "db_port": 3307,
+ "db_type": "mariadb",
+ "db_user": "_8da9b6201368520b",
+ "installed_apps": [
+  "frappe"
+ ]
+}

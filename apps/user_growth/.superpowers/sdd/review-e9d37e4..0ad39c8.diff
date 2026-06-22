@@ -1,0 +1,62 @@
+# Review package: e9d37e4..HEAD
+
+## Commits
+0ad39c8 feat: add user growth dashboard api
+
+## Files changed
+ user_growth/user_growth/page/__init__.py              |  0
+ .../page/user_growth_dashboard/__init__.py            |  0
+ .../user_growth_dashboard/user_growth_dashboard.json  | 19 +++++++++++++++++++
+ .../user_growth_dashboard/user_growth_dashboard.py    | 12 ++++++++++++
+ 4 files changed, 31 insertions(+)
+
+## Diff
+diff --git a/user_growth/user_growth/page/__init__.py b/user_growth/user_growth/page/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/user_growth/user_growth/page/user_growth_dashboard/__init__.py b/user_growth/user_growth/page/user_growth_dashboard/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/user_growth/user_growth/page/user_growth_dashboard/user_growth_dashboard.json b/user_growth/user_growth/page/user_growth_dashboard/user_growth_dashboard.json
+new file mode 100644
+index 0000000..fec5819
+--- /dev/null
++++ b/user_growth/user_growth/page/user_growth_dashboard/user_growth_dashboard.json
+@@ -0,0 +1,19 @@
++{
++  "content": null,
++  "creation": "2026-06-22 00:00:00.000000",
++  "docstatus": 0,
++  "doctype": "Page",
++  "idx": 0,
++  "modified": "2026-06-22 00:00:00.000000",
++  "modified_by": "Administrator",
++  "module": "User Growth",
++  "name": "user-growth-dashboard",
++  "owner": "Administrator",
++  "page_name": "user-growth-dashboard",
++  "roles": [{"role": "System Manager"}],
++  "script": null,
++  "standard": "Yes",
++  "style": null,
++  "system_page": 0,
++  "title": "User Growth Dashboard"
++}
+diff --git a/user_growth/user_growth/page/user_growth_dashboard/user_growth_dashboard.py b/user_growth/user_growth/page/user_growth_dashboard/user_growth_dashboard.py
+new file mode 100644
+index 0000000..decf9d6
+--- /dev/null
++++ b/user_growth/user_growth/page/user_growth_dashboard/user_growth_dashboard.py
+@@ -0,0 +1,12 @@
++import json
++
++import frappe
++
++from user_growth.analytics import get_growth_analytics
++
++
++@frappe.whitelist()
++def get_dashboard_data(filters=None):
++    if isinstance(filters, str):
++        filters = json.loads(filters or "{}")
++    return get_growth_analytics(filters or {})

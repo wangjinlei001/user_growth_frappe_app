@@ -1,0 +1,65 @@
+# Review package: f8ab6b2..HEAD
+
+## Commits
+2938e4f chore: normalize user growth module list
+166b330 chore: scaffold user growth app
+
+## Files changed
+ user_growth/hooks.py    | 4 ++--
+ user_growth/modules.txt | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+## Diff
+diff --git a/user_growth/hooks.py b/user_growth/hooks.py
+index fbe4ef6..11c767f 100644
+--- a/user_growth/hooks.py
++++ b/user_growth/hooks.py
+@@ -1,16 +1,16 @@
+ app_name = "user_growth"
+ app_title = "User Growth"
+ app_publisher = "Local"
+ app_description = "Demo user growth analytics app for Frappe"
+ app_email = "local@example.com"
+-app_license = "mit"
++app_license = "MIT"
+ 
+ # Apps
+ # ------------------
+ 
+ # required_apps = []
+ 
+ # Each item in the list will be shown as an app in the apps page
+ # add_to_apps_screen = [
+ # 	{
+ # 		"name": "user_growth",
+@@ -79,21 +79,21 @@ app_license = "mit"
+ # add methods and filters to jinja environment
+ # jinja = {
+ # 	"methods": "user_growth.utils.jinja_methods",
+ # 	"filters": "user_growth.utils.jinja_filters"
+ # }
+ 
+ # Installation
+ # ------------
+ 
+ # before_install = "user_growth.install.before_install"
+-# after_install = "user_growth.install.after_install"
++after_install = "user_growth.install.after_install"
+ 
+ # Uninstallation
+ # ------------
+ 
+ # before_uninstall = "user_growth.uninstall.before_uninstall"
+ # after_uninstall = "user_growth.uninstall.after_uninstall"
+ 
+ # Integration Setup
+ # ------------------
+ # To set up dependencies/integrations with other apps
+diff --git a/user_growth/modules.txt b/user_growth/modules.txt
+index a6597d4..e2db459 100644
+--- a/user_growth/modules.txt
++++ b/user_growth/modules.txt
+@@ -1 +1 @@
+-User Growth
+\ No newline at end of file
++User Growth

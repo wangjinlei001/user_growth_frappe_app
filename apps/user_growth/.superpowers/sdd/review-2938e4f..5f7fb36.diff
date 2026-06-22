@@ -1,0 +1,183 @@
+# Review package: 2938e4f..HEAD
+
+## Commits
+5f7fb36 feat: add user service lifecycle doctype
+
+## Files changed
+ user_growth/doctype/__init__.py                    |  0
+ .../doctype/user_service_lifecycle/__init__.py     |  0
+ .../test_user_service_lifecycle.py                 | 70 ++++++++++++++++++++++
+ .../user_service_lifecycle.json                    | 56 +++++++++++++++++
+ .../user_service_lifecycle.py                      | 19 ++++++
+ 5 files changed, 145 insertions(+)
+
+## Diff
+diff --git a/user_growth/doctype/__init__.py b/user_growth/doctype/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/user_growth/doctype/user_service_lifecycle/__init__.py b/user_growth/doctype/user_service_lifecycle/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/user_growth/doctype/user_service_lifecycle/test_user_service_lifecycle.py b/user_growth/doctype/user_service_lifecycle/test_user_service_lifecycle.py
+new file mode 100644
+index 0000000..174059a
+--- /dev/null
++++ b/user_growth/doctype/user_service_lifecycle/test_user_service_lifecycle.py
+@@ -0,0 +1,70 @@
++import frappe
++from frappe.tests.utils import FrappeTestCase
++
++
++class TestUserServiceLifecycle(FrappeTestCase):
++    def test_churned_user_requires_churn_date(self):
++        doc = frappe.get_doc(
++            {
++                "doctype": "User Service Lifecycle",
++                "user_id": "UG-TEST-CHURN-MISSING",
++                "customer_name": "测试客户",
++                "service_status": "Churned",
++                "signup_date": "2026-01-01",
++                "province": "广东",
++                "region": "华南",
++                "acquisition_channel": "自然流量",
++                "plan_type": "Pro",
++                "monthly_revenue": 399,
++                "industry": "互联网",
++                "account_manager": "李明",
++            }
++        )
++
++        with self.assertRaises(frappe.ValidationError):
++            doc.insert()
++
++    def test_churn_date_cannot_be_before_signup_date(self):
++        doc = frappe.get_doc(
++            {
++                "doctype": "User Service Lifecycle",
++                "user_id": "UG-TEST-CHURN-BEFORE",
++                "customer_name": "测试客户",
++                "service_status": "Churned",
++                "signup_date": "2026-02-01",
++                "churn_date": "2026-01-01",
++                "province": "浙江",
++                "region": "华东",
++                "acquisition_channel": "广告投放",
++                "plan_type": "Basic",
++                "monthly_revenue": 199,
++                "industry": "电商",
++                "account_manager": "王芳",
++            }
++        )
++
++        with self.assertRaises(frappe.ValidationError):
++            doc.insert()
++
++    def test_active_user_clears_churn_date(self):
++        doc = frappe.get_doc(
++            {
++                "doctype": "User Service Lifecycle",
++                "user_id": "UG-TEST-ACTIVE-CLEAR",
++                "customer_name": "测试客户",
++                "service_status": "Active",
++                "signup_date": "2026-03-01",
++                "churn_date": "2026-04-01",
++                "province": "江苏",
++                "region": "华东",
++                "acquisition_channel": "老客推荐",
++                "plan_type": "Enterprise",
++                "monthly_revenue": 2999,
++                "industry": "制造",
++                "account_manager": "赵强",
++            }
++        )
++
++        doc.insert()
++        self.assertIsNone(doc.churn_date)
++        doc.delete()
+diff --git a/user_growth/doctype/user_service_lifecycle/user_service_lifecycle.json b/user_growth/doctype/user_service_lifecycle/user_service_lifecycle.json
+new file mode 100644
+index 0000000..8d19bf1
+--- /dev/null
++++ b/user_growth/doctype/user_service_lifecycle/user_service_lifecycle.json
+@@ -0,0 +1,56 @@
++{
++  "actions": [],
++  "allow_rename": 0,
++  "autoname": "field:user_id",
++  "creation": "2026-06-22 00:00:00.000000",
++  "doctype": "DocType",
++  "editable_grid": 1,
++  "engine": "InnoDB",
++  "field_order": [
++    "user_id",
++    "customer_name",
++    "service_status",
++    "signup_date",
++    "churn_date",
++    "profile_section",
++    "province",
++    "region",
++    "acquisition_channel",
++    "plan_type",
++    "monthly_revenue",
++    "industry",
++    "account_manager",
++    "notes"
++  ],
++  "fields": [
++    {"fieldname": "user_id", "fieldtype": "Data", "in_list_view": 1, "in_standard_filter": 1, "label": "User ID", "reqd": 1, "unique": 1},
++    {"fieldname": "customer_name", "fieldtype": "Data", "in_list_view": 1, "label": "Customer Name", "reqd": 1},
++    {"fieldname": "service_status", "fieldtype": "Select", "in_list_view": 1, "in_standard_filter": 1, "label": "Service Status", "options": "Active\nChurned", "reqd": 1},
++    {"fieldname": "signup_date", "fieldtype": "Date", "in_list_view": 1, "in_standard_filter": 1, "label": "Signup Date", "reqd": 1},
++    {"fieldname": "churn_date", "fieldtype": "Date", "in_list_view": 1, "label": "Churn Date"},
++    {"fieldname": "profile_section", "fieldtype": "Section Break", "label": "Profile"},
++    {"fieldname": "province", "fieldtype": "Data", "in_list_view": 1, "in_standard_filter": 1, "label": "Province", "reqd": 1},
++    {"fieldname": "region", "fieldtype": "Select", "in_standard_filter": 1, "label": "Region", "options": "华东\n华南\n华北\n华中\n西南\n西北\n东北", "reqd": 1},
++    {"fieldname": "acquisition_channel", "fieldtype": "Select", "in_standard_filter": 1, "label": "Acquisition Channel", "options": "自然流量\n广告投放\n渠道合作\n活动转化\n老客推荐", "reqd": 1},
++    {"fieldname": "plan_type", "fieldtype": "Select", "in_list_view": 1, "in_standard_filter": 1, "label": "Plan Type", "options": "Free\nBasic\nPro\nEnterprise", "reqd": 1},
++    {"fieldname": "monthly_revenue", "fieldtype": "Currency", "in_list_view": 1, "label": "Monthly Revenue", "reqd": 1},
++    {"fieldname": "industry", "fieldtype": "Select", "in_standard_filter": 1, "label": "Industry", "options": "电商\n教育\n制造\n金融\n医疗\n互联网", "reqd": 1},
++    {"fieldname": "account_manager", "fieldtype": "Data", "label": "Account Manager"},
++    {"fieldname": "notes", "fieldtype": "Small Text", "label": "Notes"}
++  ],
++  "index_web_pages_for_search": 1,
++  "links": [],
++  "modified": "2026-06-22 00:00:00.000000",
++  "modified_by": "Administrator",
++  "module": "User Growth",
++  "name": "User Service Lifecycle",
++  "naming_rule": "By fieldname",
++  "owner": "Administrator",
++  "permissions": [
++    {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1}
++  ],
++  "quick_entry": 0,
++  "sort_field": "modified",
++  "sort_order": "DESC",
++  "states": []
++}
+diff --git a/user_growth/doctype/user_service_lifecycle/user_service_lifecycle.py b/user_growth/doctype/user_service_lifecycle/user_service_lifecycle.py
+new file mode 100644
+index 0000000..7285157
+--- /dev/null
++++ b/user_growth/doctype/user_service_lifecycle/user_service_lifecycle.py
+@@ -0,0 +1,19 @@
++import frappe
++from frappe.model.document import Document
++from frappe.utils import getdate
++
++
++class UserServiceLifecycle(Document):
++    def validate(self):
++        self.validate_churn_date()
++
++    def validate_churn_date(self):
++        if self.service_status == "Active":
++            self.churn_date = None
++            return
++
++        if self.service_status == "Churned" and not self.churn_date:
++            frappe.throw("Churn Date is required when Service Status is Churned")
++
++        if self.churn_date and getdate(self.churn_date) < getdate(self.signup_date):
++            frappe.throw("Churn Date cannot be before Signup Date")

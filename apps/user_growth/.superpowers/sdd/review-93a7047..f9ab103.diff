@@ -1,0 +1,376 @@
+# Review package: 93a7047..HEAD
+
+## Commits
+f9ab103 fix: align analytics summary with filter date
+d5f6b07 feat: add user growth analytics service
+
+## Files changed
+ user_growth/analytics.py            | 228 ++++++++++++++++++++++++++++++++++++
+ user_growth/tests/__init__.py       |   0
+ user_growth/tests/test_analytics.py | 120 +++++++++++++++++++
+ 3 files changed, 348 insertions(+)
+
+## Diff
+diff --git a/user_growth/analytics.py b/user_growth/analytics.py
+new file mode 100644
+index 0000000..05fa33b
+--- /dev/null
++++ b/user_growth/analytics.py
+@@ -0,0 +1,228 @@
++from __future__ import annotations
++
++from collections import Counter
++from datetime import date
++
++import frappe
++from frappe.utils import add_months, flt, get_first_day, get_last_day, getdate, nowdate
++
++DOCTYPE = "User Service Lifecycle"
++
++OPTIONAL_FILTERS = (
++    "region",
++    "province",
++    "acquisition_channel",
++    "plan_type",
++    "service_status",
++)
++
++
++def get_default_date_range(today: date | None = None) -> tuple[date, date]:
++    to_date = getdate(today or nowdate())
++    from_date = get_first_day(add_months(to_date, -11))
++    return from_date, to_date
++
++
++def build_filters(filters: dict | None) -> dict:
++    filters = frappe._dict(filters or {})
++    default_from, default_to = get_default_date_range()
++
++    return {
++        "from_date": getdate(filters.get("from_date") or default_from),
++        "to_date": getdate(filters.get("to_date") or default_to),
++        "region": filters.get("region"),
++        "province": filters.get("province"),
++        "acquisition_channel": filters.get("acquisition_channel"),
++        "plan_type": filters.get("plan_type"),
++        "service_status": filters.get("service_status"),
++    }
++
++
++def get_lifecycle_rows(filters: dict | None = None) -> list[frappe._dict]:
++    normalized = build_filters(filters)
++    query_filters = []
++
++    for fieldname in OPTIONAL_FILTERS:
++        if normalized.get(fieldname):
++            query_filters.append([DOCTYPE, fieldname, "=", normalized[fieldname]])
++
++    rows = frappe.get_all(
++        DOCTYPE,
++        filters=query_filters,
++        fields=[
++            "name",
++            "user_id",
++            "customer_name",
++            "service_status",
++            "signup_date",
++            "churn_date",
++            "province",
++            "region",
++            "acquisition_channel",
++            "plan_type",
++            "monthly_revenue",
++            "industry",
++            "account_manager",
++        ],
++        order_by="signup_date asc, user_id asc",
++    )
++
++    from_date = normalized["from_date"]
++    to_date = normalized["to_date"]
++    relevant_rows = []
++    for row in rows:
++        signup_date = getdate(row.signup_date)
++        churn_date = getdate(row.churn_date) if row.churn_date else None
++        signed_in_range = from_date <= signup_date <= to_date
++        churned_in_range = bool(churn_date and from_date <= churn_date <= to_date)
++        active_during_range = signup_date <= to_date and (not churn_date or churn_date >= from_date)
++        if signed_in_range or churned_in_range or active_during_range:
++            relevant_rows.append(row)
++
++    return relevant_rows
++
++
++def get_growth_analytics(filters: dict | None = None) -> dict:
++    normalized = build_filters(filters)
++    rows = get_lifecycle_rows(normalized)
++    monthly = get_monthly_metrics(rows, normalized["from_date"], normalized["to_date"])
++
++    active_rows = [row for row in rows if is_active_on_date(row, normalized["to_date"])]
++    churned_rows = [row for row in rows if is_churned_record(row)]
++    latest_month = monthly[-1] if monthly else _empty_month("", date.today())
++
++    summary = {
++        "total_users": len(rows),
++        "active_users": len(active_rows),
++        "churned_users": len(churned_rows),
++        "current_mrr": sum(flt(row.monthly_revenue) for row in active_rows),
++        "latest_month_new_users": latest_month["new_users"],
++        "latest_month_churned_users": latest_month["churned_users"],
++        "latest_month_churn_rate": latest_month["churn_rate"],
++        "latest_month_net_growth": latest_month["net_growth"],
++    }
++
++    return {
++        "filters": normalized,
++        "summary": summary,
++        "monthly": monthly,
++        "regions": count_by(rows, "region"),
++        "provinces": count_by(rows, "province", limit=10),
++        "channels": count_by(rows, "acquisition_channel"),
++        "plans": count_by(rows, "plan_type"),
++        "recent_signups": recent_rows(rows, "signup_date"),
++        "recent_churns": recent_rows([row for row in rows if row.churn_date], "churn_date"),
++        "top_customers": top_customers(active_rows),
++    }
++
++
++def get_monthly_metrics(rows: list[frappe._dict], from_date: date, to_date: date) -> list[dict]:
++    months = month_starts(from_date, to_date)
++    data = []
++
++    for month_start in months:
++        month_end = min(get_last_day(month_start), to_date)
++        month_key = month_start.strftime("%Y-%m")
++        month_start_active = [
++            row
++            for row in rows
++            if getdate(row.signup_date) < month_start
++            and (not row.churn_date or getdate(row.churn_date) >= month_start)
++        ]
++        new_rows = [row for row in rows if month_start <= getdate(row.signup_date) <= month_end]
++        churned_rows = [
++            row
++            for row in rows
++            if row.churn_date and month_start <= getdate(row.churn_date) <= month_end
++        ]
++        active_at_month_end = [
++            row
++            for row in rows
++            if getdate(row.signup_date) <= month_end
++            and (not row.churn_date or getdate(row.churn_date) > month_end)
++        ]
++        month_start_active_count = len(month_start_active)
++        churn_rate = (len(churned_rows) / month_start_active_count * 100) if month_start_active_count else 0
++
++        data.append(
++            {
++                "month": month_key,
++                "new_users": len(new_rows),
++                "churned_users": len(churned_rows),
++                "net_growth": len(new_rows) - len(churned_rows),
++                "active_users": len(active_at_month_end),
++                "churn_rate": round(churn_rate, 2),
++                "new_mrr": sum(flt(row.monthly_revenue) for row in new_rows),
++                "churned_mrr": sum(flt(row.monthly_revenue) for row in churned_rows),
++                "net_mrr_growth": sum(flt(row.monthly_revenue) for row in new_rows)
++                - sum(flt(row.monthly_revenue) for row in churned_rows),
++            }
++        )
++
++    return data
++
++
++def month_starts(from_date: date, to_date: date) -> list[date]:
++    current = get_first_day(from_date)
++    months = []
++    while current <= to_date:
++        months.append(current)
++        current = add_months(current, 1)
++    return months
++
++
++def is_active_on_date(row: frappe._dict, as_of_date: date) -> bool:
++    signup_date = getdate(row.signup_date)
++    churn_date = getdate(row.churn_date) if row.churn_date else None
++    return signup_date <= as_of_date and (not churn_date or churn_date > as_of_date)
++
++
++def is_churned_record(row: frappe._dict) -> bool:
++    return row.service_status == "Churned" or bool(row.churn_date)
++
++
++def count_by(rows: list[frappe._dict], fieldname: str, limit: int | None = None) -> list[dict]:
++    counts = Counter(row.get(fieldname) or "未设置" for row in rows)
++    items = [{"label": label, "value": value} for label, value in counts.most_common(limit)]
++    return items
++
++
++def recent_rows(rows: list[frappe._dict], date_field: str, limit: int = 8) -> list[dict]:
++    sorted_rows = sorted(rows, key=lambda row: getdate(row.get(date_field)), reverse=True)
++    return [serialize_row(row) for row in sorted_rows[:limit]]
++
++
++def top_customers(rows: list[frappe._dict], limit: int = 8) -> list[dict]:
++    sorted_rows = sorted(rows, key=lambda row: flt(row.monthly_revenue), reverse=True)
++    return [serialize_row(row) for row in sorted_rows[:limit]]
++
++
++def serialize_row(row: frappe._dict) -> dict:
++    return {
++        "user_id": row.user_id,
++        "customer_name": row.customer_name,
++        "service_status": row.service_status,
++        "signup_date": str(row.signup_date) if row.signup_date else None,
++        "churn_date": str(row.churn_date) if row.churn_date else None,
++        "province": row.province,
++        "region": row.region,
++        "acquisition_channel": row.acquisition_channel,
++        "plan_type": row.plan_type,
++        "monthly_revenue": flt(row.monthly_revenue),
++        "industry": row.industry,
++        "account_manager": row.account_manager,
++    }
++
++
++def _empty_month(month: str, fallback_date: date) -> dict:
++    return {
++        "month": month or fallback_date.strftime("%Y-%m"),
++        "new_users": 0,
++        "churned_users": 0,
++        "net_growth": 0,
++        "active_users": 0,
++        "churn_rate": 0,
++        "new_mrr": 0,
++        "churned_mrr": 0,
++        "net_mrr_growth": 0,
++    }
+diff --git a/user_growth/tests/__init__.py b/user_growth/tests/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/user_growth/tests/test_analytics.py b/user_growth/tests/test_analytics.py
+new file mode 100644
+index 0000000..d408aff
+--- /dev/null
++++ b/user_growth/tests/test_analytics.py
+@@ -0,0 +1,120 @@
++from unittest.mock import patch
++
++import frappe
++from frappe.tests.utils import FrappeTestCase
++
++from user_growth.analytics import get_default_date_range, get_growth_analytics
++
++
++class TestGrowthAnalytics(FrappeTestCase):
++    def setUp(self):
++        frappe.db.delete("User Service Lifecycle", {"user_id": ["like", "UG-AN-%"]})
++        self.records = [
++            {
++                "user_id": "UG-AN-001",
++                "customer_name": "活跃一号",
++                "service_status": "Active",
++                "signup_date": "2026-01-10",
++                "province": "广东",
++                "region": "华南",
++                "acquisition_channel": "自然流量",
++                "plan_type": "Pro",
++                "monthly_revenue": 399,
++                "industry": "互联网",
++                "account_manager": "李明",
++            },
++            {
++                "user_id": "UG-AN-002",
++                "customer_name": "流失一号",
++                "service_status": "Churned",
++                "signup_date": "2026-01-15",
++                "churn_date": "2026-03-20",
++                "province": "浙江",
++                "region": "华东",
++                "acquisition_channel": "广告投放",
++                "plan_type": "Basic",
++                "monthly_revenue": 199,
++                "industry": "电商",
++                "account_manager": "王芳",
++            },
++            {
++                "user_id": "UG-AN-003",
++                "customer_name": "活跃二号",
++                "service_status": "Active",
++                "signup_date": "2026-03-05",
++                "province": "北京",
++                "region": "华北",
++                "acquisition_channel": "老客推荐",
++                "plan_type": "Enterprise",
++                "monthly_revenue": 2999,
++                "industry": "金融",
++                "account_manager": "赵强",
++            },
++        ]
++        for record in self.records:
++            doc = frappe.get_doc({"doctype": "User Service Lifecycle", **record})
++            doc.insert()
++
++    def tearDown(self):
++        frappe.db.delete("User Service Lifecycle", {"user_id": ["like", "UG-AN-%"]})
++
++    def test_default_date_range_spans_twelve_months(self):
++        from_date, to_date = get_default_date_range(today=frappe.utils.getdate("2026-06-22"))
++        self.assertEqual(str(from_date), "2025-07-01")
++        self.assertEqual(str(to_date), "2026-06-22")
++
++    def test_growth_analytics_summary(self):
++        result = get_growth_analytics({"from_date": "2026-01-01", "to_date": "2026-03-31"})
++        summary = result["summary"]
++
++        self.assertEqual(summary["total_users"], 3)
++        self.assertEqual(summary["active_users"], 2)
++        self.assertEqual(summary["churned_users"], 1)
++        self.assertEqual(summary["current_mrr"], 3398)
++        self.assertEqual(summary["latest_month_new_users"], 1)
++        self.assertEqual(summary["latest_month_churned_users"], 1)
++
++    def test_growth_analytics_monthly_values(self):
++        result = get_growth_analytics({"from_date": "2026-01-01", "to_date": "2026-03-31"})
++        monthly = {row["month"]: row for row in result["monthly"]}
++
++        self.assertEqual(monthly["2026-01"]["new_users"], 2)
++        self.assertEqual(monthly["2026-01"]["churned_users"], 0)
++        self.assertEqual(monthly["2026-03"]["new_users"], 1)
++        self.assertEqual(monthly["2026-03"]["churned_users"], 1)
++        self.assertEqual(monthly["2026-03"]["net_growth"], 0)
++
++    def test_empty_data_returns_zero_summary(self):
++        result = get_growth_analytics({"from_date": "2024-01-01", "to_date": "2024-01-31"})
++        summary = result["summary"]
++
++        self.assertEqual(summary["total_users"], 0)
++        self.assertEqual(summary["active_users"], 0)
++        self.assertEqual(summary["current_mrr"], 0)
++        self.assertEqual(result["monthly"][0]["new_users"], 0)
++
++    def test_summary_counts_churned_user_as_active_before_churn_date(self):
++        rows = [
++            frappe._dict(
++                user_id="UG-AN-HIST-001",
++                customer_name="历史边界客户",
++                service_status="Churned",
++                signup_date="2026-01-01",
++                churn_date="2026-04-01",
++                province="上海",
++                region="华东",
++                acquisition_channel="自然流量",
++                plan_type="Pro",
++                monthly_revenue=599,
++                industry="制造",
++                account_manager="陈晨",
++            )
++        ]
++
++        with patch("user_growth.analytics.get_lifecycle_rows", return_value=rows):
++            result = get_growth_analytics({"from_date": "2026-01-01", "to_date": "2026-03-31"})
++
++        self.assertEqual(result["summary"]["active_users"], 1)
++        self.assertEqual(result["summary"]["current_mrr"], 599)
++        self.assertEqual(result["summary"]["churned_users"], 1)
++        self.assertEqual(result["monthly"][-1]["active_users"], 1)
