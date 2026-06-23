@@ -112,3 +112,52 @@
 2026-06-22 22:28:35,342 INFO /home/wjl/.local/bin/bench --version
 2026-06-22 22:28:45,264 INFO /home/wjl/.local/bin/bench --site user-growth.localhost list-apps
 2026-06-22 22:36:35,427 INFO /home/wjl/.local/bin/bench list-apps
+2026-06-23 02:30:26,919 INFO /home/wjl/.local/bin/bench --site user-growth.localhost list-apps
+2026-06-23 02:33:56,606 INFO /home/wjl/.local/bin/bench --site user-growth.localhost list-apps
+2026-06-23 02:34:24,129 INFO /home/wjl/.local/bin/bench --site user-growth.localhost execute frappe.db.count --args ["User Service Lifecycle", {"user_id": ["like", "UG-%"]}]
+2026-06-23 02:34:40,764 INFO /home/wjl/.local/bin/bench --site user-growth.localhost execute frappe.db.exists --args ["DocType", "User Service Lifecycle"]
+2026-06-23 06:55:47,229 INFO /home/wjl/.local/bin/bench --site user-growth.localhost list-apps
+2026-06-23 06:56:34,398 INFO /home/wjl/.local/bin/bench --site user-growth.localhost execute frappe.db.count --args ["User Service Lifecycle", {"user_id": ["like", "UG-%"]}]
+2026-06-23 06:57:01,262 INFO /home/wjl/.local/bin/bench --site user-growth.localhost execute frappe.db.exists --args ["DocType", "User Service Lifecycle"]
+2026-06-23 07:02:57,680 INFO /home/wjl/.local/bin/bench --site library.localhost list-apps
+2026-06-23 07:09:56,540 INFO /home/wjl/.local/bin/bench --site user-growth.localhost list-apps
+2026-06-23 07:10:43,933 INFO /home/wjl/.local/bin/bench --site user-growth.localhost migrate
+2026-06-23 07:12:14,090 INFO /home/wjl/.local/bin/bench --site user-growth.localhost migrate
+2026-06-23 07:12:54,753 INFO /home/wjl/.local/bin/bench new-site --help
+2026-06-23 07:15:41,285 INFO /home/wjl/.local/bin/bench --site user-growth.localhost install-app frappe
+2026-06-23 07:30:31,073 INFO /home/wjl/.local/bin/bench --site user-growth.localhost list-apps
+2026-06-23 07:31:05,991 INFO /home/wjl/.local/bin/bench --site user-growth.localhost execute frappe.db.exists --args ["DocType", "User Service Lifecycle"]
+2026-06-23 07:31:31,879 INFO /home/wjl/.local/bin/bench --site user-growth.localhost execute frappe.db.exists --args ["Report", "User Growth Analytics"]
+2026-06-23 07:31:51,336 INFO /home/wjl/.local/bin/bench --site user-growth.localhost execute frappe.db.exists --args ["Page", "user-growth-dashboard"]
+2026-06-23 07:32:10,792 INFO /home/wjl/.local/bin/bench --site user-growth.localhost execute frappe.db.count --args ["User Service Lifecycle", {"user_id": ["like", "UG-%"]}]
+2026-06-23 07:32:50,616 INFO /home/wjl/.local/bin/bench --site user-growth.localhost execute user_growth.user_growth.report.user_growth_analytics.user_growth_analytics.execute --kwargs {"filters":{"from_date":"2025-07-01","to_date":"2026-06-22"}}
+2026-06-23 07:33:20,759 INFO /home/wjl/.local/bin/bench --site user-growth.localhost execute user_growth.user_growth.page.user_growth_dashboard.user_growth_dashboard.get_dashboard_data --kwargs {"filters":{}}
+2026-06-23 07:33:47,484 INFO /home/wjl/.local/bin/bench --site user-growth.localhost execute user_growth.user_growth.page.user_growth_dashboard.user_growth_dashboard.get_dashboard_data --kwargs {"filters":{"service_status":"Churned","region":"华东"}}
+2026-06-23 07:34:19,306 INFO /home/wjl/.local/bin/bench --site user-growth.localhost migrate
+2026-06-23 07:40:46,131 INFO /home/wjl/.local/bin/bench serve --port 8000 --noreload
+2026-06-23 07:59:13,236 INFO /home/wjl/.local/bin/bench --site user-growth.localhost execute frappe.get_doc --args ["Page", "user-growth-dashboard"]
+2026-06-23 08:00:47,902 INFO /home/wjl/.local/bin/bench --site user-growth.localhost execute frappe.db.exists --args ["Page", "user-growth-dashboard"]
+2026-06-23 08:01:06,855 INFO /home/wjl/.local/bin/bench --site user-growth.localhost execute frappe.db.get_list --args ["Page"] --kwargs {"filters":{"module":"User Growth"},"fields":["name","page_name","title","module"],"limit_page_length":20}
+2026-06-23 08:01:47,395 INFO /home/wjl/.local/bin/bench --site library.localhost execute frappe.db.exists --args ["Page", "user-growth-dashboard"]
+2026-06-23 08:09:01,126 INFO /home/wjl/.local/bin/bench serve --port 8000 --noreload
+2026-06-23 08:11:48,064 INFO /home/wjl/.local/bin/bench --site user-growth.localhost execute frappe.db.get_value --args ["DefaultValue", {"defkey":"installed_apps"}, "defvalue"]
+2026-06-23 08:13:53,649 INFO /home/wjl/.local/bin/bench --site library.localhost execute frappe.db.get_value --args ["DefaultValue", {"defkey":"installed_apps"}, "defvalue"]
+2026-06-23 08:14:46,394 INFO /home/wjl/.local/bin/bench --site user-growth.localhost execute frappe.db.exists --args ["Page", "user-growth-dashboard"]
+2026-06-23 08:15:25,677 INFO /home/wjl/.local/bin/bench --site user-growth.localhost execute frappe.db.get_list --args ["Page"] --kwargs {"filters":{"module":"User Growth"},"fields":["name","page_name","title","module"],"limit_page_length":20}
+2026-06-23 08:15:43,185 INFO /home/wjl/.local/bin/bench --site user-growth.localhost execute frappe.get_installed_apps
+2026-06-23 08:15:54,311 INFO /home/wjl/.local/bin/bench --site user-growth.localhost execute user_growth.user_growth.page.user_growth_dashboard.user_growth_dashboard.get_dashboard_data --kwargs {"filters":{}}
+2026-06-23 08:16:45,736 INFO /home/wjl/.local/bin/bench --site user-growth.localhost serve --port 8000 --noreload
+2026-06-23 08:21:35,604 INFO /home/wjl/.local/bin/bench --site user-growth.localhost run-tests --app user_growth --module user_growth.user_growth.page.user_growth_dashboard.test_user_growth_dashboard
+2026-06-23 08:22:42,256 INFO /home/wjl/.local/bin/bench --site user-growth.localhost set-config allow_tests true
+2026-06-23 08:22:54,192 INFO /home/wjl/.local/bin/bench --site user-growth.localhost run-tests --app user_growth --module user_growth.user_growth.page.user_growth_dashboard.test_user_growth_dashboard
+2026-06-23 08:24:40,701 INFO /home/wjl/.local/bin/bench --site user-growth.localhost run-tests --app user_growth --module user_growth.user_growth.page.user_growth_dashboard.test_user_growth_dashboard
+2026-06-23 08:26:31,280 INFO /home/wjl/.local/bin/bench --site user-growth.localhost serve --port 8000 --noreload
+2026-06-23 09:07:44,045 INFO /home/wjl/.local/bin/bench --version
+2026-06-23 09:07:57,894 INFO /home/wjl/.local/bin/bench build
+2026-06-23 09:15:18,351 INFO /home/wjl/.local/bin/bench build
+2026-06-23 09:18:27,018 INFO /home/wjl/.local/bin/bench clear-cache
+2026-06-23 09:19:19,093 INFO /home/wjl/.local/bin/bench clear-website-cache
+2026-06-23 09:19:37,431 INFO /home/wjl/.local/bin/bench restart
+2026-06-23 09:29:52,788 INFO /home/wjl/.local/bin/bench --site user-growth.localhost run-tests --module user_growth.user_growth.page.user_growth_dashboard.test_user_growth_dashboard
+2026-06-23 09:32:38,505 INFO /home/wjl/.local/bin/bench --site user-growth.localhost run-tests --module user_growth.user_growth.page.user_growth_dashboard.test_user_growth_dashboard
+2026-06-23 09:42:34,804 INFO /home/wjl/.local/bin/bench --site user-growth.localhost run-tests --module user_growth.user_growth.page.user_growth_dashboard.test_user_growth_dashboard
