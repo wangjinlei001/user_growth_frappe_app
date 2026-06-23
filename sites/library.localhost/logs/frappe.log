@@ -1,0 +1,3 @@
+2026-06-23 07:56:43,996 ERROR frappe New Exception collected in error log
+Site: library.localhost
+Form Dict: {'cmd': 'frappe.desk.desk_page.getpage'}
