@@ -6,6 +6,7 @@ from user_growth.mock_data import seed_mock_data
 def after_install():
 	seed_mock_data(record_count=200)
 	_ensure_workspace()
+	_ensure_desktop_icons()
 
 
 def _ensure_workspace() -> None:
@@ -76,3 +77,36 @@ def _ensure_workspace() -> None:
 		}
 	)
 	workspace.insert(ignore_permissions=True)
+
+
+def _ensure_desktop_icons() -> None:
+	"""Create Desktop Icons so User Growth shows up in Desk's app switcher and sidebar.
+
+	Frappe's `create_desktop_icons_from_installed_apps` reads the App icon's
+	`logo_url` via ``app_details[0]["logo"]`` without a fallback. If any app on
+	the site lacks the `logo` key in its `add_to_apps_screen`, the whole
+	auto-generation block aborts and User Growth's icons never get created.
+	Re-running the helpers here is idempotent and guarantees our icons exist.
+	"""
+	from frappe.desk.doctype.desktop_icon.desktop_icon import (
+		create_desktop_icons_from_installed_apps,
+		create_desktop_icons_from_workspace,
+	)
+
+	try:
+		create_desktop_icons_from_installed_apps()
+	except Exception as exc:
+		frappe.log_error(
+			title="user_growth: create_desktop_icons_from_installed_apps failed",
+			message=str(exc),
+		)
+
+	try:
+		create_desktop_icons_from_workspace()
+	except Exception as exc:
+		frappe.log_error(
+			title="user_growth: create_desktop_icons_from_workspace failed",
+			message=str(exc),
+		)
+
+	frappe.cache.delete_value("desktop_icons")
