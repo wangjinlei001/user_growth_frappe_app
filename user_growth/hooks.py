@@ -11,15 +11,13 @@ app_license = "MIT"
 # required_apps = []
 
 # Each item in the list will be shown as an app in the apps page
-# add_to_apps_screen = [
-# 	{
-# 		"name": "user_growth",
-# 		"logo": "/assets/user_growth/logo.png",
-# 		"title": "User Growth",
-# 		"route": "/user_growth",
-# 		"has_permission": "user_growth.api.permission.has_app_permission"
-# 	}
-# ]
+add_to_apps_screen = [
+	{
+		"name": "user_growth",
+		"title": "User Growth",
+		"route": "/app/user-growth",
+	}
+]
 
 # Includes in <head>
 # ------------------
