@@ -16,6 +16,7 @@ add_to_apps_screen = [
 		"name": "user_growth",
 		"title": "User Growth",
 		"route": "/app/user-growth",
+		"logo": "/assets/frappe/images/frappe-framework-logo.svg",
 	}
 ]
 
